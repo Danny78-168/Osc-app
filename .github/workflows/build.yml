@@ -16,10 +16,10 @@ jobs:
         with:
           node-version: '22'
 
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: 'temurin'
+          java-version: '21'
 
       - name: 自動初始化並編譯 Android
         run: |
@@ -32,7 +32,7 @@ jobs:
           npx cap sync android
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug -Dorg.gradle.java.home=$JAVA_HOME
 
       - name: 上傳 Android APK 成品
         uses: actions/upload-artifact@v4
