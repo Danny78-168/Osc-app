@@ -21,14 +21,24 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 自動初始化並編譯 Android
+      - name: 自動初始化、替換圖示並編譯 Android
         run: |
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
           npm init -y
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
+          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest @capacitor/assets@latest
           npx cap init "OscApp" "com.osc.app" --web-dir www
           npx cap add android
+
+          # 若根目錄有 icon.png，自動生成各解析度 Android 圖示
+          if [ -f icon.png ]; then
+            mkdir -p assets
+            cp icon.png assets/icon-only.png
+            cp icon.png assets/icon-foreground.png
+            cp icon.png assets/icon-background.png
+            npx cordova-res android --skip-config --copy 2>/dev/null || npx @capacitor/assets generate --android
+          fi
+
           npx cap sync android
           cd android
           chmod +x gradlew
