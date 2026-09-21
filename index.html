@@ -2,15 +2,69 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- 1. HTML 原生秒轉機制（0秒自動跳轉），就算 JS 被阻斷也會生效 -->
+  <meta http-equiv="refresh" content="0;url=https://liff.line.me/2011681231-z9W0peLU">
   <title>Osc App</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      background-color: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #333333;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #00c300; /* LINE 主色系 */
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    p {
+      font-size: 16px;
+      color: #666666;
+    }
+    a {
+      color: #00c300;
+      text-decoration: none;
+      font-weight: bold;
+    }
+  </style>
+
   <script>
-    window.location.replace("https://liff.line.me/2011681231-z9W0peLU");
+    // 2. JavaScript 雙重引導跳轉
+    function redirectToTarget() {
+      const targetUrl = "https://liff.line.me/2011681231-z9W0peLU";
+      window.location.href = targetUrl;
+    }
+
+    // 頁面載入完成後立即執行
+    document.addEventListener("DOMContentLoaded", redirectToTarget);
+
+    // 1 秒後防護備用觸發
+    setTimeout(redirectToTarget, 1000);
   </script>
 </head>
 <body>
-  <p style="text-align: center; margin-top: 30vh; font-size: 18px; color: #666;">
-    正在連線至目標頁面，請稍候...
+  <div class="spinner"></div>
+  <p>正在為您連線至頁面，請稍候...</p>
+  <p style="margin-top: 12px; font-size: 14px;">
+    若無反應，<a href="https://liff.line.me/2011681231-z9W0peLU">點此直接開啟</a>
   </p>
 </body>
 </html>
