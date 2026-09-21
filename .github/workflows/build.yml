@@ -1,4 +1,4 @@
-name: Build Capacitor App
+name: Build Signed Release APK & AAB
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-android:
-    name: 打包 Android APK
+    name: 自動生成金鑰並打包正式簽名版 APK 與 AAB
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,7 +21,7 @@ jobs:
           distribution: 'temurin'
           java-version: '21'
 
-      - name: 自動初始化、替換圖示並編譯 Android
+      - name: 自動初始化專案與圖示
         run: |
           mkdir -p www
           cp index.html www/ 2>/dev/null || true
@@ -30,7 +30,6 @@ jobs:
           npx cap init "OscApp" "com.osc.app" --web-dir www
           npx cap add android
 
-          # 若根目錄有 icon.png，自動生成各解析度 Android 圖示
           if [ -f icon.png ]; then
             mkdir -p assets
             cp icon.png assets/icon-only.png
@@ -40,34 +39,30 @@ jobs:
           fi
 
           npx cap sync android
+
+      - name: 雲端自動生成安全數位憑證 (.keystore)
+        run: |
+          keytool -genkey -v -keystore release.keystore -alias oscappkey -keyalg RSA -keysize 2048 -validity 10000 -storepass "OscAppPassword123" -keypass "OscAppPassword123" -dname "CN=OscApp, OU=Dev, O=Osc, L=Taipei, ST=Taiwan, C=TW"
+
+      - name: 編譯正式版並寫入數位簽名
+        run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug -Dorg.gradle.java.home=$JAVA_HOME
+          ./gradlew assembleRelease -Dorg.gradle.java.home=$JAVA_HOME
+          ./gradlew bundleRelease -Dorg.gradle.java.home=$JAVA_HOME
+          
+          # 使用 jarsigner 進行正式金鑰對齊與簽名
+          $JAVA_HOME/bin/jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore ../release.keystore -storepass "OscAppPassword123" app/build/outputs/apk/release/app-release-unsigned.apk oscappkey
+          $JAVA_HOME/bin/jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore ../release.keystore -storepass "OscAppPassword123" app/build/outputs/bundle/release/app-release.aab oscappkey
 
-      - name: 上傳 Android APK 成品
+      - name: 上傳正式簽名版 APK (直接安裝用)
         uses: actions/upload-artifact@v4
         with:
-          name: Android-APK
-          path: android/app/build/outputs/apk/debug/*.apk
+          name: Android-Release-APK
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
 
-  build-ios:
-    name: 打包 iOS 專案
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - name: 上傳正式簽名版 AAB (Google Play 上架用)
+        uses: actions/upload-artifact@v4
         with:
-          node-version: '22'
-
-      - name: 自動初始化並編譯 iOS
-        run: |
-          mkdir -p www
-          cp index.html www/ 2>/dev/null || true
-          npm init -y
-          npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/ios@latest
-          npx cap init "OscApp" "com.osc.app" --web-dir www
-          npx cap add ios
-          npx cap sync ios
-          cd ios/App
-          xcodebuild build -workspace App.xcworkspace -scheme App -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=No
+          name: Android-Release-AAB
+          path: android/app/build/outputs/bundle/release/app-release.aab
