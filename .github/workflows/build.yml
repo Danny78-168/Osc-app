@@ -23,11 +23,13 @@ jobs:
 
       - name: 自動初始化並編譯 Android
         run: |
+          mkdir -p www
+          cp index.html www/ 2>/dev/null || true
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/android@latest
-          npx cap init "OscApp" "com.osc.app" --web-dir .
+          npx cap init "OscApp" "com.osc.app" --web-dir www
           npx cap add android
-          npx cap copy android
+          npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
@@ -50,10 +52,12 @@ jobs:
 
       - name: 自動初始化並編譯 iOS
         run: |
+          mkdir -p www
+          cp index.html www/ 2>/dev/null || true
           npm init -y
           npm install @capacitor/core@latest @capacitor/cli@latest @capacitor/ios@latest
-          npx cap init "OscApp" "com.osc.app" --web-dir .
+          npx cap init "OscApp" "com.osc.app" --web-dir www
           npx cap add ios
-          npx cap copy ios
+          npx cap sync ios
           cd ios/App
           xcodebuild build -workspace App.xcworkspace -scheme App -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=No
