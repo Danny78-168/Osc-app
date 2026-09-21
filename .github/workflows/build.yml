@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-android:
-    name: 自動簽名並打包可安裝的 Release APK
+    name: 打包正式簽名版 (APK 與 AAB)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,7 @@ jobs:
           npx cap init "OscApp" "com.osc.app" --web-dir www
           npx cap add android
 
+          # 自動生成 App 圖示
           if [ -f icon.png ]; then
             mkdir -p assets
             cp icon.png assets/icon-only.png
@@ -38,35 +39,52 @@ jobs:
             npx cordova-res android --skip-config --copy 2>/dev/null || npx @capacitor/assets generate --android
           fi
 
+          # 寫入直連設定，防止畫面空白
+          cat << 'EOF' > capacitor.config.json
+          {
+            "appId": "com.osc.app",
+            "appName": "OscApp",
+            "webDir": "www",
+            "server": {
+              "url": "https://liff.line.me/2011681231-z9W0peLU",
+              "cleartext": true
+            }
+          }
+          EOF
+
           npx cap sync android
 
-      - name: 雲端自動生成金鑰並進行完整 Android 簽名 (zipalign + apksigner)
+      - name: 雲端生成金鑰與編譯
         run: |
-          # 1. 生成加密金鑰
+          # 生成專屬安全金鑰
           keytool -genkey -v -keystore release.keystore -alias oscappkey -keyalg RSA -keysize 2048 -validity 10000 -storepass "OscAppPassword123" -keypass "OscAppPassword123" -dname "CN=OscApp, OU=Dev, O=Osc, L=Taipei, ST=Taiwan, C=TW"
 
+          # 執行正式版編譯
           cd android
           chmod +x gradlew
           ./gradlew assembleRelease -Dorg.gradle.java.home=$JAVA_HOME
           ./gradlew bundleRelease -Dorg.gradle.java.home=$JAVA_HOME
 
-          # 2. 定位 Android SDK 工具
+      - name: 寫入正式數位簽名
+        run: |
+          cd android
           BUILD_TOOLS_DIR=$(ls -d $ANDROID_HOME/build-tools/* | tail -n 1)
 
-          # 3. 對 APK 進行 zipalign 對齊優化
-          $BUILD_TOOLS_DIR/zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/apk/release/OscApp-signed.apk
+          # --- 1. 處理直接安裝的 APK (zipalign + apksigner) ---
+          $BUILD_TOOLS_DIR/zipalign -v 4 app/build/outputs/apk/release/app-release-unsigned.apk OscApp-Final-Signed.apk
+          $BUILD_TOOLS_DIR/apksigner sign --ks ../release.keystore --ks-pass pass:OscAppPassword123 --ks-key-alias oscappkey --key-pass pass:OscAppPassword123 OscApp-Final-Signed.apk
 
-          # 4. 使用 apksigner 寫入 V2/V3 官方正式簽名
-          $BUILD_TOOLS_DIR/apksigner sign --ks ../release.keystore --ks-pass pass:OscAppPassword123 --ks-key-alias oscappkey --key-pass pass:OscAppPassword123 app/build/outputs/apk/release/OscApp-signed.apk
+          # --- 2. 處理 Google Play 上架的 AAB (jarsigner) ---
+          $JAVA_HOME/bin/jarsigner -verbose -sigalg SHA256withRSA -digestalg SHA-256 -keystore ../release.keystore -storepass "OscAppPassword123" app/build/outputs/bundle/release/app-release.aab oscappkey
 
-      - name: 上傳可直接安裝的正式版 APK
+      - name: 📦 上傳直接安裝版 (APK)
         uses: actions/upload-artifact@v4
         with:
-          name: Android-Release-APK
-          path: android/app/build/outputs/apk/release/OscApp-signed.apk
+          name: Android-Install-APK
+          path: android/OscApp-Final-Signed.apk
 
-      - name: 上傳 Google Play 上架專用 AAB
+      - name: 🚀 上傳 Google Play 上架版 (AAB)
         uses: actions/upload-artifact@v4
         with:
-          name: Android-Release-AAB
+          name: Android-GooglePlay-AAB
           path: android/app/build/outputs/bundle/release/app-release.aab
