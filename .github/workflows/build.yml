@@ -1,44 +1,16 @@
-name: Build Capacitor App
-
-on:
-  push:
-    branches: [ "main" ]
-  workflow_dispatch:
-
-jobs:
-  # Android 雲端打包
-  build-android:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - run: npm install
-      - run: npx cap sync android
-      - uses: actions/setup-java@v4
-        with: { distribution: 'zulu', java-version: '17' }
-      - name: Build APK
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew assembleDebug
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android-APK
-          path: android/app/build/outputs/apk/debug/*.apk
-
-  # iOS 雲端打包
-  build-ios:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - run: npm install
-      - run: npx cap sync ios
-      - name: Build iOS Xcode Project
-        run: |
-          cd ios/App
-          xcodebuild build -workspace App.xcworkspace -scheme App -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=No
-          
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Osc App</title>
+  <script>
+    window.location.replace("https://liff.line.me/2011681231-z9W0peLU");
+  </script>
+</head>
+<body>
+  <p style="text-align: center; margin-top: 30vh; font-size: 18px; color: #666;">
+    正在連線至目標頁面，請稍候...
+  </p>
+</body>
+</html>
